@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import './sdk_version.dart';
+
 class DeviceInfoProvider {
   final BuildContext? context;
   final String _deviceIdFile = 'device_id.txt';
@@ -26,6 +28,7 @@ class DeviceInfoProvider {
 
     data['timezone_offset'] = -DateTime.now().timeZoneOffset.inMinutes;
     data['sdk'] = "flutter-sdk";
+    data['sdk_version'] = FlittMobileSdk.version;
     data['platform_name'] = kIsWeb ? 'web' : defaultTargetPlatform.toString().split('.').last.toLowerCase();
     data['platform_version'] = packageInfo.version;
     data['platform_os'] = getPlatformOS();

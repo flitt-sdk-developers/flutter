@@ -17,3 +17,4 @@ export 'src/google_pay_button.dart';
 export 'src/order.dart';
 export 'src/receipt.dart';
 export 'src/bank.dart';
+export 'src/fee_calculation_response.dart';

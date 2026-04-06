@@ -39,24 +39,32 @@ class CreditCardInputLayoutState extends State<CreditCardInputLayoutImpl>
   final CreditCardNumberFieldImpl _number;
   final CreditCardExpMmFieldImpl _expMm;
   final CreditCardExpYyFieldImpl _expYy;
-  final CreditCardCvvFieldImpl _cvv;
+  final CreditCardCvvFieldImpl? _cvv;
+  String? _cvv2Requirement;
 
   CreditCardInputLayoutState(Widget child)
       : _child = child,
         _number = _findStrict(child, 'CreditCardNumberField'),
         _expMm = _findStrict(child, 'CreditCardExpMmField'),
         _expYy = _findStrict(child, 'CreditCardExpYyField'),
-        _cvv = _findStrict(child, 'CreditCardCvvField') {
+        _cvv = _findNested<CreditCardCvvFieldImpl>(child) {
     _number.textEditingController.addListener(() {
-      _cvv.setCvv4(CvvUtils.isCvv4Length(_number.textEditingController.text));
+      _cvv?.setCvv4(CvvUtils.isCvv4Length(_number.textEditingController.text));
     });
+  }
+
+  TextEditingController get cardNumberController =>
+      _number.textEditingController;
+
+  void setCvv2Requirement(String? requirement) {
+    _cvv2Requirement = requirement;
   }
 
   void setHelpCard(String number, String expMm, String expYy, String cvv) {
     _number.textEditingController.text = number;
     _expMm.textEditingController.text = expMm;
     _expYy.textEditingController.text = expYy;
-    _cvv.textEditingController.text = cvv;
+    _cvv?.textEditingController.text = cvv;
   }
 
   @override
@@ -65,7 +73,8 @@ class CreditCardInputLayoutState extends State<CreditCardInputLayoutImpl>
         _number.textEditingController.text,
         int.tryParse(_expMm.textEditingController.text) ?? -1,
         int.tryParse(_expYy.textEditingController.text) ?? -1,
-        _cvv.textEditingController.text);
+        _cvv?.textEditingController.text ?? '',
+        cvvAbsent: _cvv2Requirement == 'absent');
   }
 
   @override

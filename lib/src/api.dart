@@ -9,6 +9,9 @@ import './cloudipsp_error.dart';
 import './credit_card.dart';
 import './order.dart';
 import './receipt.dart';
+import './fee_calculation_response.dart';
+import './deviceInfoProvider.dart';
+import './sdk_version.dart';
 
 class Api {
   // static const API_HOST = 'https://sandbox.pay.flitt.dev';
@@ -140,7 +143,12 @@ class Api {
     request['card_number'] = creditCard.cardNumber;
     request['expiry_date'] =
         _expMmFormat(creditCard.mm) + creditCard.yy.toString();
-    request['cvv2'] = creditCard.cvv.toString();
+    if (!creditCard.cvvAbsent) {
+      final cvv = creditCard.cvv.toString();
+      if (cvv.isNotEmpty) {
+        request['cvv2'] = cvv;
+      }
+    }
     request['payment_system'] = 'card';
     request['token'] = token;
     if (email != null && email.isNotEmpty) {
@@ -183,9 +191,46 @@ class Api {
     return await _call('api/checkout/ajax', requestObj);
   }
 
+  Future<FeeCalculationResponse> calculateFee({
+    required int amount,
+    required String currency,
+    required String cardBin,
+    String? token,
+    int? merchantId,
+  }) async {
+    final Map<String, dynamic> request = HashMap();
+    request['amount'] = amount;
+    request['currency'] = currency;
+    request['card_bin'] = cardBin;
+    if (merchantId != null) {
+      request['merchant_id'] = merchantId;
+    }
+    if (token != null && token.isNotEmpty) {
+      request['token'] = token;
+    }
+
+    final response = await _call('api/fee/calc_v2', request);
+    if (response is Map<String, dynamic>) {
+      return FeeCalculationResponse.fromJson(response);
+    }
+    throw CloudipspError('Unexpected fee calculation response');
+  }
+
   Future<dynamic> _call(String path, Map<String, dynamic> requestJson) async {
     final url = '$API_HOST/$path';
-    final requestBody = jsonEncode({'request': requestJson});
+    String? kkh;
+    try {
+      final deviceInfo = DeviceInfoProvider();
+      kkh = await deviceInfo.getEncodedDeviceFingerprint();
+    } catch (_) {
+      kkh = null;
+    }
+
+    final root = <String, dynamic>{'request': requestJson};
+    if (kkh != null && kkh.isNotEmpty) {
+      root['kkh'] = kkh;
+    }
+    final requestBody = jsonEncode(root);
 
     if (_logging) {
       print('Request. $url, $requestBody');
@@ -215,7 +260,7 @@ class Api {
     return {
       'User-Agent': 'Flutter',
       'SDK-OS': _platformSpecific.operatingSystem,
-      'SDK-Version': '0.4.1'
+      'SDK-Version': FlittMobileSdk.version
     };
   }
 

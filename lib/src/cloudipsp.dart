@@ -8,13 +8,13 @@ import './api.dart';
 import './cloudipsp_error.dart';
 import './cloudipsp_web_view_confirmation.dart';
 import './credit_card.dart';
+import './fee_calculation_response.dart';
 import './native.dart';
 import './order.dart';
 import './platform_specific.dart';
 import './receipt.dart';
 import 'bank.dart';
 import 'bankRedirectDetails.dart';
-import 'deviceInfoProvider.dart';
 
 typedef void CloudipspWebViewHolder(CloudipspWebViewConfirmation confirmation);
 
@@ -55,6 +55,14 @@ abstract class Cloudipsp {
   Future<BankRedirectDetails> initiateBankPaymentByToken(
       String token, Bank bank,
       {bool autoRedirect = true});
+
+  Future<FeeCalculationResponse> calculateFee({
+    required int amount,
+    required String currency,
+    required String cardBin,
+    String? token,
+    int? merchantId,
+  });
 }
 
 class CloudipspImpl implements Cloudipsp {
@@ -312,11 +320,6 @@ class CloudipspImpl implements Cloudipsp {
       String token, Bank bank,
       {bool autoRedirect = true}) async {
     try {
-      // Get device info
-      final deviceInfoProvider = DeviceInfoProvider();
-      final deviceFingerprint =
-          await deviceInfoProvider.getEncodedDeviceFingerprint();
-
       // Get order information
       final receipt = await _api.getAjaxInfo(token);
       final orderData = receipt['order_data'];
@@ -328,10 +331,7 @@ class CloudipspImpl implements Cloudipsp {
         'currency': orderData['currency'],
         'token': token,
         'payment_system': bank.bankId,
-        'kkh': deviceFingerprint,
       };
-
-      print("requestObject: " + deviceFingerprint);
 
       final response = await _api.callAjax(requestObj);
 
@@ -362,6 +362,23 @@ class CloudipspImpl implements Cloudipsp {
     } catch (e) {
       throw CloudipspError('Failed to initiate bank payment: ${e.toString()}');
     }
+  }
+
+  @override
+  Future<FeeCalculationResponse> calculateFee({
+    required int amount,
+    required String currency,
+    required String cardBin,
+    String? token,
+    int? merchantId,
+  }) {
+    return _api.calculateFee(
+      amount: amount,
+      currency: currency,
+      cardBin: cardBin,
+      token: token,
+      merchantId: merchantId ?? this.merchantId,
+    );
   }
 
   Future<bool> _launchUrl(String url) async {

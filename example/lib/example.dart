@@ -25,22 +25,23 @@ class _ExampleState extends State<Example> {
   ExampleOrderMode _orderMode = ExampleOrderMode.Order;
   ExampleCardInputMode _cardInputMode = ExampleCardInputMode.CardInputView;
 
-  CloudipspWebViewConfirmation _cloudipspWebViewConfirmation;
+  CloudipspWebViewConfirmation? _cloudipspWebViewConfirmation;
   bool _supportsApplePay = false;
   bool _supportsGooglePay = false;
   final _tokenEditingController = TextEditingController(text: '');
-  final _merchantIdEditingController = TextEditingController(text: '1396424');
+  final _merchantIdEditingController = TextEditingController(text: '4055775');
   final _amountEditingController = TextEditingController(text: '1');
   final _emailEditingController =
       TextEditingController(text: 'example@test.com');
   final _descriptionEditingController =
       TextEditingController(text: 'test payment :)');
-  String _selectedCurrency = 'UAH';
+  String _selectedCurrency = 'UZS';
 
   final GlobalKey _cloudipspWebViewKey = GlobalKey();
   final GlobalKey _creditCardInputKey = GlobalKey();
 
-  Cloudipsp _cloudipsp;
+  Cloudipsp? _cloudipsp; // ← nullable
+  FeeCalculationResponse? _lastFee;
 
   @override
   void initState() {
@@ -48,7 +49,8 @@ class _ExampleState extends State<Example> {
     _checkAppleAndGooglePays();
   }
 
-  Future<void> _checkAppleAndGooglePays() async {
+Future<void> _checkAppleAndGooglePays() async {
+  try {
     final cloudipsp = _getCloudipsp();
     final supportsApplePay = await cloudipsp.supportsApplePay();
     final supportsGooglePay = await cloudipsp.supportsGooglePay();
@@ -59,7 +61,8 @@ class _ExampleState extends State<Example> {
       _supportsApplePay = supportsApplePay;
       _supportsGooglePay = supportsGooglePay;
     });
-  }
+  } catch (e) {}
+}
 
   void _cloudipspWebViewHolder(CloudipspWebViewConfirmation confirmation) {
     setState(() {
@@ -67,21 +70,21 @@ class _ExampleState extends State<Example> {
     });
   }
 
-  Cloudipsp _getCloudipsp() {
-    int merchantId;
-    try {
-      merchantId = int.parse(_merchantIdEditingController.text);
-    } catch (e) {
-      throw ("Invalid MerchantID");
-    }
-    if (_cloudipsp == null || _cloudipsp.merchantId != merchantId) {
-      _cloudipsp = Cloudipsp(merchantId, _cloudipspWebViewHolder);
-    }
-    return _cloudipsp;
+Cloudipsp _getCloudipsp() {
+  int merchantId;
+  try {
+    merchantId = int.parse(_merchantIdEditingController.text);
+  } catch (e) {
+    throw ("Invalid MerchantID");
   }
+  if (_cloudipsp == null || _cloudipsp!.merchantId != merchantId) {
+    _cloudipsp = Cloudipsp(merchantId, _cloudipspWebViewHolder);
+  }
+  return _cloudipsp!;
+}
 
-  void _payScope(Future<Receipt> Function(Cloudipsp cloudipsp) handler) async {
-    String info;
+  void _payScope(Future<Receipt?> Function(Cloudipsp cloudipsp) handler) async {
+    String? info;
     try {
       final cloudipsp = _getCloudipsp();
       final receipt = await handler(cloudipsp);
@@ -108,6 +111,14 @@ class _ExampleState extends State<Example> {
     });
   }
 
+  int? _tryParseInt(String raw) {
+    try {
+      return int.parse(raw);
+    } catch (_) {
+      return null;
+    }
+  }
+
   Order _getOrder() {
     int amount;
     try {
@@ -123,13 +134,12 @@ class _ExampleState extends State<Example> {
     if (description.isEmpty) {
       throw ("Invalid description");
     }
-    return Order(
-      amount,
-      _selectedCurrency,
-      'Flutter_${DateTime.now().millisecondsSinceEpoch}',
-      description,
-      email,
-    );
+
+    final order = Order(amount, _selectedCurrency, 'Flutter_${DateTime.now().millisecondsSinceEpoch}', description, email);
+
+    order.reservationData = 'reservsdaksadkasdkasdk';
+
+    return order;
   }
 
   String _getToken() {
@@ -151,9 +161,13 @@ class _ExampleState extends State<Example> {
       throw ("Invalid expire year");
     } else if (!creditCard.isValidExpireDate()) {
       throw ("Invalid expire date");
-    } else if (!creditCard.isValidCvv()) {
+    } else if ((_lastFee?.cvv2Requirement ?? '').trim().toLowerCase() !=
+            'absent' &&
+        !creditCard.isValidCvv()) {
       throw ("Invalid cvv");
-    } else if (!creditCard.isValid()) {
+    } else if ((_lastFee?.cvv2Requirement ?? '').trim().toLowerCase() !=
+            'absent' &&
+        !creditCard.isValid()) {
       throw ("Invalid card");
     }
     return creditCard;
@@ -185,9 +199,9 @@ class _ExampleState extends State<Example> {
   void _onApplePayPressed() async {
     _payScope((cloudipsp) async {
       if (_orderMode == ExampleOrderMode.Order) {
-        return _cloudipsp.applePay(_getOrder());
+        return cloudipsp.applePay(_getOrder()); 
       } else if (_orderMode == ExampleOrderMode.Token) {
-        return _cloudipsp.applePayToken(_getToken());
+        return cloudipsp.applePayToken(_getToken());
       } else {
         throw StateError('Unsupported order mode $_orderMode');
       }
@@ -197,9 +211,9 @@ class _ExampleState extends State<Example> {
   Future<void> _onGooglePayPressed() async {
     _payScope((cloudipsp) async {
       if (_orderMode == ExampleOrderMode.Order) {
-        return _cloudipsp.googlePay(_getOrder());
+        return cloudipsp.googlePay(_getOrder(), context);
       } else if (_orderMode == ExampleOrderMode.Token) {
-        return _cloudipsp.googlePayToken(_getToken());
+        return cloudipsp.googlePayToken(_getToken(), context);
       } else {
         throw StateError('Unsupported order mode $_orderMode');
       }
@@ -217,9 +231,7 @@ class _ExampleState extends State<Example> {
                 border: OutlineInputBorder(),
               ),
             ),
-            SizedBox(
-              height: 15.0,
-            ),
+            SizedBox(height: 15.0),
             Row(children: [
               Expanded(
                   flex: 1,
@@ -233,9 +245,7 @@ class _ExampleState extends State<Example> {
                       ),
                     ],
                   )),
-              SizedBox(
-                width: 15.0,
-              ),
+              SizedBox(width: 15.0),
               Expanded(
                   flex: 1,
                   child: Column(
@@ -248,9 +258,7 @@ class _ExampleState extends State<Example> {
                       ),
                     ],
                   )),
-              SizedBox(
-                width: 15.0,
-              ),
+              SizedBox(width: 15.0),
               Expanded(
                   flex: 1,
                   child: Column(
@@ -311,9 +319,10 @@ class _ExampleState extends State<Example> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text('Order mode:'),
-                DropdownButton(
+                DropdownButton<ExampleOrderMode>(
                   value: _orderMode,
-                  onChanged: (ExampleOrderMode newOrderMode) {
+                  onChanged: (ExampleOrderMode? newOrderMode) {
+                    if (newOrderMode == null) return;
                     if (newOrderMode == ExampleOrderMode.Order &&
                         _orderMode != ExampleOrderMode.Order) {
                       _tokenEditingController.text = '';
@@ -328,7 +337,7 @@ class _ExampleState extends State<Example> {
                     return DropdownMenuItem<ExampleOrderMode>(
                       value: value,
                       child: Text(
-                        describeEnum(value),
+                        value.name,
                         style: TextStyle(fontSize: 20),
                       ),
                     );
@@ -337,38 +346,36 @@ class _ExampleState extends State<Example> {
               ],
             ),
           ),
-          SizedBox(
-            width: 20.0,
-          ),
+          SizedBox(width: 20.0),
           Expanded(
             flex: 2,
-            child:
-                Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text('Card Input Type:'),
-              DropdownButton(
-                value: _cardInputMode,
-                onChanged: (ExampleCardInputMode newCardInputMode) {
-                  setState(() {
-                    _cardInputMode = newCardInputMode;
-                  });
-                },
-                items: ExampleCardInputMode.values
-                    .map<DropdownMenuItem<ExampleCardInputMode>>(
-                        (ExampleCardInputMode value) {
-                  return DropdownMenuItem<ExampleCardInputMode>(
-                    value: value,
-                    child: Text(
-                      describeEnum(value),
-                      style: TextStyle(fontSize: 20),
-                    ),
-                  );
-                }).toList(),
-              )
-            ]),
+            child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Card Input Type:'),
+                  DropdownButton<ExampleCardInputMode>(
+                    value: _cardInputMode,
+                    onChanged: (ExampleCardInputMode? newCardInputMode) {
+                      if (newCardInputMode == null) return;
+                      setState(() {
+                        _cardInputMode = newCardInputMode;
+                      });
+                    },
+                    items: ExampleCardInputMode.values
+                        .map<DropdownMenuItem<ExampleCardInputMode>>(
+                            (ExampleCardInputMode value) {
+                      return DropdownMenuItem<ExampleCardInputMode>(
+                        value: value,
+                        child: Text(
+                          value.name,
+                          style: TextStyle(fontSize: 20),
+                        ),
+                      );
+                    }).toList(),
+                  )
+                ]),
           ),
-          SizedBox(
-            height: 15.0,
-          ),
+          SizedBox(height: 15.0),
         ],
       )
     ];
@@ -383,9 +390,7 @@ class _ExampleState extends State<Example> {
             hintText: 'Enter your MerchantID',
           ),
         ),
-        SizedBox(
-          height: 15.0,
-        ),
+        SizedBox(height: 15.0),
         Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
           Expanded(
               flex: 3,
@@ -402,34 +407,28 @@ class _ExampleState extends State<Example> {
                       ),
                     ),
                   ])),
-          SizedBox(
-            width: 20.0,
-          ),
+          SizedBox(width: 20.0),
           Expanded(
             flex: 1,
-            child: DropdownButton(
+            child: DropdownButton<String>(
               value: _selectedCurrency,
-              onChanged: (String newCurrency) {
+              onChanged: (String? newCurrency) {
+                if (newCurrency == null) return;
                 setState(() {
                   _selectedCurrency = newCurrency;
                 });
               },
-              items: <String>['UAH', 'USD', 'EUR', 'GBP', 'RUB', 'KZT']
+              items: <String>['UAH', 'USD', 'EUR', 'GBP', 'RUB', 'KZT','UZS']
                   .map<DropdownMenuItem<String>>((String value) {
                 return DropdownMenuItem<String>(
                   value: value,
-                  child: Text(
-                    value,
-                    style: TextStyle(fontSize: 20),
-                  ),
+                  child: Text(value, style: TextStyle(fontSize: 20)),
                 );
               }).toList(),
             ),
           )
         ]),
-        SizedBox(
-          height: 15.0,
-        ),
+        SizedBox(height: 15.0),
         Text('Email:'),
         TextFormField(
           controller: _emailEditingController,
@@ -439,9 +438,7 @@ class _ExampleState extends State<Example> {
             hintText: 'Enter email for receipt',
           ),
         ),
-        SizedBox(
-          height: 15.0,
-        ),
+        SizedBox(height: 15.0),
         Text('Description:'),
         TextFormField(
           controller: _descriptionEditingController,
@@ -471,29 +468,49 @@ class _ExampleState extends State<Example> {
     mainUi.add(SizedBox(height: 15.0));
 
     if (_cardInputMode == ExampleCardInputMode.CardInputView) {
+      final merchantId = _tryParseInt(_merchantIdEditingController.text);
+      final amount = _tryParseInt(_amountEditingController.text);
+      final token = _orderMode == ExampleOrderMode.Token
+          ? _tokenEditingController.text
+          : null;
+
       mainUi.add(CreditCardInputView(
           key: _creditCardInputKey,
           helperNeeded: kDebugMode,
-          inputDecoration: InputDecoration(border: OutlineInputBorder())));
+          inputDecoration: InputDecoration(border: OutlineInputBorder()),
+          merchantId: merchantId,
+          amount: amount,
+          currency: _selectedCurrency,
+          token: token,
+          onFeeResult: (fee) {
+            setState(() {
+              _lastFee = fee;
+            });
+          }));
     } else if (_cardInputMode == ExampleCardInputMode.CardInputLayout) {
       mainUi.add(_cardInputLayout());
     } else {
       throw StateError('Unsupported card input mode: $_cardInputMode');
     }
 
+    if (_lastFee != null) {
+      mainUi.addAll([
+        SizedBox(height: 15.0),
+        Text('Fee calc result:'),
+        Text(
+            'fee_amount=${_lastFee!.feeAmount}, total_amount=${_lastFee!.totalAmount}, cvv2_requirement=${_lastFee!.cvv2Requirement}'),
+      ]);
+    }
+
     if (_tokenEditingController.text.isNotEmpty &&
         _orderMode == ExampleOrderMode.Order) {
       mainUi.addAll([
-        SizedBox(
-          height: 15.0,
-        ),
+        SizedBox(height: 15.0),
         Text('Generated token:'),
         TextFormField(
           controller: _tokenEditingController,
           readOnly: true,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(),
-          ),
+          decoration: InputDecoration(border: OutlineInputBorder()),
         )
       ]);
     }
@@ -509,13 +526,15 @@ class _ExampleState extends State<Example> {
           children: mainUi,
         ),
       )),
-      Visibility(
-          visible: _cloudipspWebViewConfirmation != null,
-          child: Positioned.fill(
-              child: CloudipspWebView(
-            key: _cloudipspWebViewKey,
-            confirmation: _cloudipspWebViewConfirmation,
-          )))
+Visibility(
+    visible: _cloudipspWebViewConfirmation != null,
+    child: _cloudipspWebViewConfirmation != null
+        ? Positioned.fill(
+            child: CloudipspWebView(
+              key: _cloudipspWebViewKey,
+              confirmation: _cloudipspWebViewConfirmation!,  // ← add ! here
+            ))
+        : const SizedBox.shrink())
     ]);
   }
 }

@@ -21,8 +21,11 @@ class PrivateCreditCard implements CreditCard {
   final int mm;
   final int yy;
   final String cvv;
+  final bool cvvAbsent;
 
-  PrivateCreditCard(this.cardNumber, this.mm, this.yy, this.cvv) : super();
+  PrivateCreditCard(this.cardNumber, this.mm, this.yy, this.cvv,
+      {this.cvvAbsent = false})
+      : super();
 
   @override
   bool isValidCardNumber() {
@@ -68,6 +71,9 @@ class PrivateCreditCard implements CreditCard {
 
   @override
   bool isValidCvv() {
+    if (cvvAbsent) {
+      return true;
+    }
     if (CvvUtils.isCvv4Length(cardNumber)) {
       return cvv.length == 4;
     } else {

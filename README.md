@@ -525,6 +525,48 @@ Future<void> _loadBanks() async {
 }
 ```
 
+### Card fee calculation (calc_v2) + CVV requirement
+
+Use this when you want to calculate card fees **before** charging the card and hide CVV if it’s not required (`cvv2_requirement == "absent"`).
+
+```dart
+CreditCardInputView(
+  helperNeeded: kDebugMode,
+  inputDecoration: const InputDecoration(border: OutlineInputBorder()),
+  merchantId: 4055775,
+  amount: 1, // smallest currency unit
+  currency: 'UZS',
+  // token: '...', // optional (for token-based flow)
+  onFeeResult: (FeeCalculationResponse fee) {
+    // fee.feeAmount, fee.totalAmount, fee.cvv2Requirement, ...
+  },
+)
+```
+
+Notes:
+- The SDK requests fees from `api/fee/calc_v2` once card number length is **>= 6**.
+- If `cvv2_requirement` is `"absent"`, the CVV field is hidden and `cvv2` is **not sent** in the checkout request.
+
+### Custom fee calculation (no UI)
+
+If you have your own card form, you can call fee calculation directly:
+
+```dart
+final cloudipsp = Cloudipsp(
+  4055775,
+  (_) {}, // WebView holder (not used for fee calculation)
+);
+
+final fee = await cloudipsp.calculateFee(
+  amount: 1,
+  currency: 'UZS',
+  cardBin: '8600202020202023', 
+  // token: '...', // optional
+);
+
+print('fee=${fee.feeAmount}, total=${fee.totalAmount}, cvv2=${fee.cvv2Requirement}');
+```
+
 
 ```dart
 Future<void> _loadBanks() async {

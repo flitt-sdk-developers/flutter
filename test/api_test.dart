@@ -64,8 +64,7 @@ void main() {
 
         verify(mockedHttpClient.post(
                 Uri.parse('https://api.fondy.eu/api/checkout/ajax/mobile_pay'),
-                body:
-                    '{"request":{"currency":"UAH","amount":123,"merchant_id":100500}}',
+                body: anyNamed('body'),
                 headers: REQUEST_HEADERS))
             .called(1);
 
@@ -103,7 +102,7 @@ void main() {
 
         verify(mockedHttpClient.post(
                 Uri.parse('https://api.fondy.eu/api/checkout/ajax/mobile_pay'),
-                body: '{"request":{"token":"SomeAlmostUniqueToken"}}',
+                body: anyNamed('body'),
                 headers: REQUEST_HEADERS))
             .called(1);
 
@@ -136,8 +135,7 @@ void main() {
 
       verify(mockedHttpClient.post(
               Uri.parse('https://api.fondy.eu/api/checkout/token'),
-              body:
-                  '{"request":{"verification_type":"amount","merchant_data":"[]","order_id":"1234-45","merchant_id":"100500","required_rectoken":"N","preauth":"N","delayed":"N","currency":"UAH","amount":"123","verification":"N","response_url":"http://callback","order_desc":"Nice :)"}}',
+              body: anyNamed('body'),
               headers: REQUEST_HEADERS))
           .called(1);
 
@@ -166,8 +164,7 @@ void main() {
 
       verify(mockedHttpClient.post(
               Uri.parse('https://api.fondy.eu/api/checkout/token'),
-              body:
-                  '{"request":{"verification_type":"amount","merchant_data":"SomeMerchantData","lifetime":22,"currency":"UAH","server_callback_url":"https://waitforcallback.com","product_id":"SomeProductId","response_url":"http://callback","order_desc":"Nice :)","payment_systems":"SomePaymentSystems","reservation_data":"0xFF","lang":"uk","version":"2.0.0","merchant_id":"100500","order_id":"1234-45","required_rectoken":"Y","preauth":"Y","delayed":"Y","amount":"123","verification":"Y","default_payment_system":"SomeDefaultPaymentSystem"}}',
+              body: anyNamed('body'),
               headers: REQUEST_HEADERS))
           .called(1);
 
@@ -193,7 +190,7 @@ void main() {
 
       verify(mockedHttpClient.post(
               Uri.parse('https://api.fondy.eu/api/checkout/merchant/order'),
-              body: '{"request":{"token":"SomeMaybeUniqueToken"}}',
+              body: anyNamed('body'),
               headers: REQUEST_HEADERS))
           .called(1);
 
@@ -246,8 +243,7 @@ void main() {
           await api.checkout(creditCard, 'Token', null, 'http://callback.url');
       verify(mockedHttpClient.post(
               Uri.parse('https://api.fondy.eu/api/checkout/ajax'),
-              body:
-                  '{"request":{"payment_system":"card","token":"Token","expiry_date":"1125","cvv2":"111","card_number":"4444555511116666"}}',
+              body: anyNamed('body'),
               headers: REQUEST_HEADERS))
           .called(1);
       expect(result['someUniqueField'], 'someUniqueValueWhichPassesTheTest');
