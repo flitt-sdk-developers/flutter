@@ -61,7 +61,7 @@ public class GooglePayButtonPlugin implements FlutterPlugin, ActivityAware {
         this.activity = null;
     }
 
-    private static class GooglePayButtonFactory extends PlatformViewFactory {
+    public static class GooglePayButtonFactory extends PlatformViewFactory {
         private final MethodChannel channel;
 
         GooglePayButtonFactory(BinaryMessenger messenger) {
