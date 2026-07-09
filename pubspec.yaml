@@ -1,6 +1,6 @@
 name: flitt_mobile
 description: Flitt SDK for Mobile(Android, iOS). The only way to accept payment with Fondy service on Flutter platform for mobiles.
-version: 2.0.0
+version: 2.0.1
 homepage: https://github.com/flittpayments/flutter
 repository: https://github.com/flittpayments/flutter
 

@@ -1,3 +1,7 @@
+## 2.0.1
+* Fixed Google Pay button not rendering: the native button is now created only after the
+  payment configuration has loaded, eliminating a race that could leave the button blank.
+
 ## 2.0.0
 * Migrated from `webview_flutter` pre-4.x to 4.x+ (breaking change)
 * Updated Dart SDK constraint to support Dart 3.x

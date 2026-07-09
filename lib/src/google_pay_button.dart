@@ -70,7 +70,6 @@ class _GooglePayButtonState extends State<GooglePayButton> {
           .initializePaymentConfig(widget.order, token: widget.token);
       setState(() {
         config = paymentConfig;
-        _viewKey = UniqueKey();
       });
     } catch (error) {
       widget.onError?.call(error);
@@ -103,7 +102,7 @@ class _GooglePayButtonState extends State<GooglePayButton> {
 
   @override
   Widget build(BuildContext context) {
-    return supportsGPay
+    return supportsGPay && config != null
         ? AndroidView(
             key: _viewKey,
             viewType: 'google_pay_button_view',
