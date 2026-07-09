@@ -1,3 +1,13 @@
+## 2.1.0
+* Migrated the Google Pay button to the official `pay` package's native
+  `RawGooglePayButton` (Hybrid Composition). Removed the custom
+  `google_pay_button_view` platform view and `GooglePayButtonPlugin`.
+* The `GooglePayButton` public API is unchanged; the Flitt tokenization and 3DS
+  flow (`Cloudipsp.googlePay/googlePayToken`) is unchanged.
+* Requires `minSdkVersion 23` and Dart 3.1+ (imposed by the `pay` package).
+* `borderRadius` now maps to the button corner radius; `width`/`height` are
+  applied via an enclosing box and subject to the native button's minimum size.
+
 ## 2.0.1
 * Fixed Google Pay button never rendering: the `google_pay_button_view` platform view is now
   registered by the main plugin (`FlittMobilePlugin`), so it is actually loaded by the engine.

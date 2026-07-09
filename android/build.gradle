@@ -5,11 +5,14 @@ android {
     namespace 'com.flitt.mobile'
 
     defaultConfig {
-        minSdkVersion 21
+        // Required by the `pay` package (pay_android).
+        minSdkVersion 23
     }
 }
 
 dependencies {
-    compileOnly 'com.google.android.gms:play-services-base:17.6.0'
-    compileOnly 'com.google.android.gms:play-services-wallet:19.4.0'
+    // Used by FlittMobilePlugin's native Google Pay flow (loadPaymentData).
+    // Runtime is also provided transitively by the `pay` package.
+    implementation 'com.google.android.gms:play-services-base:17.6.0'
+    implementation 'com.google.android.gms:play-services-wallet:19.4.0'
 }

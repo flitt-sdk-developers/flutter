@@ -1,6 +1,9 @@
+import 'dart:convert';
+
 import 'package:flitt_mobile/flitt_mobile.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:pay/pay.dart';
 
 enum ButtonType {
   book,
@@ -15,6 +18,18 @@ enum ButtonType {
 
 enum ButtonThemes { light, dark }
 
+/// Builds a [Cloudipsp] for the button. Injectable for testing; defaults to the
+/// real implementation in production.
+typedef CloudipspBuilder = Cloudipsp Function(int merchantId,
+    void Function(CloudipspWebViewConfirmation) webViewHolder);
+
+/// Renders the official Google Pay button (via the `pay` package's native
+/// [RawGooglePayButton], Hybrid Composition) and drives the Flitt payment flow.
+///
+/// The public API is unchanged from previous versions: the widget takes a
+/// [token] or an [order] and reports the result through [onSuccess]/[onError].
+/// Only the button rendering was migrated to the `pay` package; the tokenization
+/// and 3DS flow still go through [Cloudipsp].
 class GooglePayButton extends StatefulWidget {
   final int merchantId;
   final Order? order;
@@ -23,11 +38,21 @@ class GooglePayButton extends StatefulWidget {
   final VoidCallback? onStart;
   final ButtonThemes theme;
   final ButtonType type;
+
+  /// Desired width. `pay` enforces a minimum width of 168; smaller values are
+  /// clamped by the native button.
   final double? width;
+
+  /// Desired height. `pay` renders the button at a fixed height (48); this is
+  /// applied via an enclosing [SizedBox].
   final double? height;
   final double? borderRadius;
   final String? token;
   final void Function(CloudipspWebViewConfirmation) webViewHolder;
+
+  /// Test-only seam for injecting a fake [Cloudipsp].
+  @visibleForTesting
+  final CloudipspBuilder? cloudipspBuilder;
 
   const GooglePayButton({
     required this.merchantId,
@@ -42,6 +67,7 @@ class GooglePayButton extends StatefulWidget {
     this.height,
     this.token,
     required this.webViewHolder,
+    this.cloudipspBuilder,
     Key? key,
   }) : super(key: key);
 
@@ -50,36 +76,26 @@ class GooglePayButton extends StatefulWidget {
 }
 
 class _GooglePayButtonState extends State<GooglePayButton> {
-  static const MethodChannel _channel = MethodChannel('google_pay_button');
   late Cloudipsp _cloudipsp;
-  bool supportsGPay = false;
   Map<String, dynamic>? config;
-  UniqueKey _viewKey = UniqueKey();
 
   @override
   void initState() {
     super.initState();
     _initializeCloudipsp();
-    _checkGPaySupport();
   }
 
   Future<void> _initializeCloudipsp() async {
-    _cloudipsp = Cloudipsp(widget.merchantId, widget.webViewHolder);
+    _cloudipsp = widget.cloudipspBuilder != null
+        ? widget.cloudipspBuilder!(widget.merchantId, widget.webViewHolder)
+        : Cloudipsp(widget.merchantId, widget.webViewHolder);
     try {
       final paymentConfig = await _cloudipsp
           .initializePaymentConfig(widget.order, token: widget.token);
+      if (!mounted) return;
       setState(() {
         config = paymentConfig;
       });
-    } catch (error) {
-      widget.onError?.call(error);
-    }
-  }
-
-  Future<void> _checkGPaySupport() async {
-    try {
-      supportsGPay = await _cloudipsp.supportsGooglePay();
-      setState(() {});
     } catch (error) {
       widget.onError?.call(error);
     }
@@ -100,44 +116,67 @@ class _GooglePayButtonState extends State<GooglePayButton> {
     }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return supportsGPay && config != null
-        ? AndroidView(
-            key: _viewKey,
-            viewType: 'google_pay_button_view',
-            creationParams: <String, dynamic>{
-              'allowedPaymentMethods': config?['data']
-                  ?['allowedPaymentMethods'],
-              'theme': widget.theme.toString().split('.').last,
-              'type': widget.type.toString().split('.').last,
-              'borderRadius': widget.borderRadius,
-              'width': widget.width,
-              'height': widget.height,
-            },
-            creationParamsCodec: const StandardMessageCodec(),
-            onPlatformViewCreated: (int id) {
-              _channel.setMethodCallHandler((call) async {
-                if (call.method == 'onPress') {
-                  _onPress();
-                }
-              });
-            },
-          )
-        : Container();
+  /// Builds the `pay` [PaymentConfiguration] from the Google Pay object the
+  /// Flitt backend already returned (`config['data']`). This stays internal to
+  /// the SDK; the merchant only ever supplies a token/order.
+  PaymentConfiguration _paymentConfiguration() {
+    return PaymentConfiguration.fromJsonString(jsonEncode(<String, dynamic>{
+      'provider': 'google_pay',
+      'data': config!['data'],
+    }));
+  }
+
+  GooglePayButtonType _mapType() {
+    switch (widget.type) {
+      case ButtonType.book:
+        return GooglePayButtonType.book;
+      case ButtonType.buy:
+        return GooglePayButtonType.buy;
+      case ButtonType.checkout:
+        return GooglePayButtonType.checkout;
+      case ButtonType.donate:
+        return GooglePayButtonType.donate;
+      case ButtonType.order:
+        return GooglePayButtonType.order;
+      case ButtonType.pay:
+        return GooglePayButtonType.pay;
+      case ButtonType.plain:
+        return GooglePayButtonType.plain;
+      case ButtonType.subscribe:
+        return GooglePayButtonType.subscribe;
+    }
+  }
+
+  GooglePayButtonTheme _mapTheme() {
+    return widget.theme == ButtonThemes.dark
+        ? GooglePayButtonTheme.dark
+        : GooglePayButtonTheme.light;
   }
 
   @override
-  void didUpdateWidget(covariant GooglePayButton oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.width != oldWidget.width ||
-        widget.height != oldWidget.height ||
-        widget.theme != oldWidget.theme ||
-        widget.type != oldWidget.type ||
-        widget.borderRadius != oldWidget.borderRadius) {
-      setState(() {
-        _viewKey = UniqueKey();
-      });
+  Widget build(BuildContext context) {
+    // Render only once the payment configuration is loaded. RawGooglePayButton
+    // itself gates on Google Pay availability, so a single async source remains
+    // and the previous create-before-config race is gone.
+    if (config == null) {
+      return const SizedBox.shrink();
     }
+
+    Widget button = RawGooglePayButton(
+      paymentConfiguration: _paymentConfiguration(),
+      type: _mapType(),
+      theme: _mapTheme(),
+      cornerRadius: widget.borderRadius?.round() ?? 24,
+      onPressed: _onPress,
+    );
+
+    if (widget.width != null || widget.height != null) {
+      button = SizedBox(
+        width: widget.width,
+        height: widget.height,
+        child: button,
+      );
+    }
+    return button;
   }
 }

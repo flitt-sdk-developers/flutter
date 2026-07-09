@@ -1,12 +1,12 @@
 name: flitt_mobile
 description: Flitt SDK for Mobile(Android, iOS). The only way to accept payment with Fondy service on Flutter platform for mobiles.
-version: 2.0.1
+version: 2.1.0
 homepage: https://github.com/flittpayments/flutter
 repository: https://github.com/flittpayments/flutter
 
 environment:
-  sdk: '>=2.12.0 <4.0.0'
-  flutter: ">=2.8.0"
+  sdk: '>=3.1.0 <4.0.0'
+  flutter: ">=3.3.0"
 
 dependencies:
   flutter:
@@ -17,6 +17,8 @@ dependencies:
 
   url_launcher: ">=6.1.11 <7.0.0"
   package_info_plus: ">=8.0.0 <9.0.0"
+  # Provides the official native Google Pay button (RawGooglePayButton).
+  pay: ">=3.0.0 <4.0.0"
 
 
 dev_dependencies:

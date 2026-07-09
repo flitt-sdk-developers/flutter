@@ -19,8 +19,6 @@ import com.google.android.gms.wallet.PaymentsClient;
 import com.google.android.gms.wallet.Wallet;
 import com.google.android.gms.wallet.WalletConstants;
 
-import com.flitt.mobile.GooglePayButton.GooglePayButtonPlugin;
-
 import org.json.JSONObject;
 
 import java.util.Map;
@@ -52,16 +50,6 @@ public class FlittMobilePlugin implements
         applicationContext = flutterPluginBinding.getApplicationContext();
         channel = new MethodChannel(flutterPluginBinding.getBinaryMessenger(), "cloudipsp_mobile");
         channel.setMethodCallHandler(this);
-
-        // Register the Google Pay button platform view here, because only this
-        // plugin class is declared in pubspec.yaml (pluginClass) and therefore
-        // added to the engine by GeneratedPluginRegistrant. Without this the
-        // "google_pay_button_view" type is never registered and GooglePayButton
-        // cannot render.
-        flutterPluginBinding.getPlatformViewRegistry().registerViewFactory(
-                "google_pay_button_view",
-                new GooglePayButtonPlugin.GooglePayButtonFactory(
-                        flutterPluginBinding.getBinaryMessenger()));
     }
 
     @Override

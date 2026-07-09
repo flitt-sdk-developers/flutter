@@ -24,7 +24,7 @@ Add the Flitt SDK to your Flutter project by adding the dependency to your `pubs
 
 ```yaml
 dependencies:
-   flitt_mobile: ^2.0.0
+   flitt_mobile: ^2.1.0
 ```
 
 Then run:
@@ -32,6 +32,25 @@ Then run:
 ```bash
 flutter pub get
 ```
+
+> Always depend on the published `flitt_mobile` package from pub.dev — do not fork the SDK.
+
+### Android requirements (Google Pay)
+
+- `minSdkVersion` **23** or higher.
+- Enable the wallet API in your `AndroidManifest.xml` (inside `<application>`):
+
+```xml
+<meta-data
+    android:name="com.google.android.gms.wallet.api.enabled"
+    android:value="true" />
+```
+
+The Google Pay button is rendered by the official [`pay`](https://pub.dev/packages/pay)
+package, which bundles a compatible Google Play Services Wallet version — you do not need to
+add `play-services-wallet` yourself. For token-based payments, generate the payment token on
+your backend and pass it to `GooglePayButton`; the SDK handles the payment configuration
+internally.
 
 ## Basic Setup
 
