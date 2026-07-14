@@ -17,24 +17,24 @@ void main() {
     });
 
     test('should throw exception invalid(empty) id', () {
-      expect(() => Order(1, 'UAH', '', '', ''),
+      expect(() => Order(1, 'GEL', '', '', ''),
           thrownArgumentError("id's length should be > 0 && <= 1024"));
     });
 
     test('should throw exception with invalid(empty) description', () {
-      expect(() => Order(1, 'UAH', 'OrderID', '', ''),
+      expect(() => Order(1, 'GEL', 'OrderID', '', ''),
           thrownArgumentError("description's length should be > 0 && <= 1024"));
     });
 
     test('should throw exception with invalid email', () {
-      expect(() => Order(1, 'UAH', 'OrderID', 'Test', 'blahblah'),
+      expect(() => Order(1, 'GEL', 'OrderID', 'Test', 'blahblah'),
           thrownArgumentError("email is not valid"));
     });
 
     test('should create order as well with null email', () {
-      final o = Order(1, 'UAH', 'OrderID', 'Test', null);
+      final o = Order(1, 'GEL', 'OrderID', 'Test', null);
       expect(o.amount, 1);
-      expect(o.currency, 'UAH');
+      expect(o.currency, 'GEL');
       expect(o.id, 'OrderID');
       expect(o.description, 'Test');
       expect(o.email, null);
@@ -63,7 +63,7 @@ void main() {
     late Order order;
 
     setUp(() {
-      order = Order(1, 'UAH', '1234-45', 'Nice :)', 'example@test.com');
+      order = Order(1, 'GEL', '1234-45', 'Nice :)', 'example@test.com');
     });
 
     group('productId', () {

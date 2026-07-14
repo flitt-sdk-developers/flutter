@@ -25,7 +25,7 @@ void main() {
     mockedHttpClient = MockClient();
     mockedPlatformSpecific = MockPlatformSpecific();
     api = Api.withHttpClient(mockedPlatformSpecific, mockedHttpClient, false);
-    order = Order(123, 'UAH', '1234-45', 'Nice :)', 'example@test.com');
+    order = Order(123, 'GEL', '1234-45', 'Nice :)', 'example@test.com');
 
     when(mockedPlatformSpecific.operatingSystem).thenReturn('UnitTestOS');
   });
@@ -42,11 +42,11 @@ void main() {
             () => api.getPaymentConfig(
                 merchantId: 100500,
                 amount: 123,
-                currency: 'UAH',
+                currency: 'GEL',
                 methodId: 'TestMethodId404',
                 methodName: 'TestMethodName404'),
             thrownUnsupported(
-                'TestMethodName404 is not supported for merchant 100500 and currency UAH'));
+                'TestMethodName404 is not supported for merchant 100500 and currency GEL'));
       });
 
       test('should proceed successfully', () async {
@@ -58,14 +58,14 @@ void main() {
         final config = await api.getPaymentConfig(
             merchantId: 100500,
             amount: 123,
-            currency: 'UAH',
+            currency: 'GEL',
             methodId: 'TestMethodId',
             methodName: 'TestMethodName');
 
         verify(mockedHttpClient.post(
-                Uri.parse('https://api.fondy.eu/api/checkout/ajax/mobile_pay'),
+                Uri.parse('https://pay.flitt.com/api/checkout/ajax/mobile_pay'),
                 body:
-                    '{"request":{"currency":"UAH","amount":123,"merchant_id":100500}}',
+                    '{"request":{"currency":"GEL","amount":123,"merchant_id":100500}}',
                 headers: REQUEST_HEADERS))
             .called(1);
 
@@ -102,7 +102,7 @@ void main() {
             methodName: 'TestMethodName');
 
         verify(mockedHttpClient.post(
-                Uri.parse('https://api.fondy.eu/api/checkout/ajax/mobile_pay'),
+                Uri.parse('https://pay.flitt.com/api/checkout/ajax/mobile_pay'),
                 body: '{"request":{"token":"SomeAlmostUniqueToken"}}',
                 headers: REQUEST_HEADERS))
             .called(1);
@@ -135,9 +135,9 @@ void main() {
       final token = await api.getToken(100500, order);
 
       verify(mockedHttpClient.post(
-              Uri.parse('https://api.fondy.eu/api/checkout/token'),
+              Uri.parse('https://pay.flitt.com/api/checkout/token'),
               body:
-                  '{"request":{"verification_type":"amount","merchant_data":"[]","order_id":"1234-45","merchant_id":"100500","required_rectoken":"N","preauth":"N","delayed":"N","currency":"UAH","amount":"123","verification":"N","response_url":"http://callback","order_desc":"Nice :)"}}',
+                  '{"request":{"verification_type":"amount","merchant_data":"[]","order_id":"1234-45","merchant_id":"100500","required_rectoken":"N","preauth":"N","delayed":"N","currency":"GEL","amount":"123","verification":"N","response_url":"http://callback","order_desc":"Nice :)"}}',
               headers: REQUEST_HEADERS))
           .called(1);
 
@@ -165,9 +165,9 @@ void main() {
       final token = await api.getToken(100500, order);
 
       verify(mockedHttpClient.post(
-              Uri.parse('https://api.fondy.eu/api/checkout/token'),
+              Uri.parse('https://pay.flitt.com/api/checkout/token'),
               body:
-                  '{"request":{"verification_type":"amount","merchant_data":"SomeMerchantData","lifetime":22,"currency":"UAH","server_callback_url":"https://waitforcallback.com","product_id":"SomeProductId","response_url":"http://callback","order_desc":"Nice :)","payment_systems":"SomePaymentSystems","reservation_data":"0xFF","lang":"uk","version":"2.0.0","merchant_id":"100500","order_id":"1234-45","required_rectoken":"Y","preauth":"Y","delayed":"Y","amount":"123","verification":"Y","default_payment_system":"SomeDefaultPaymentSystem"}}',
+                  '{"request":{"verification_type":"amount","merchant_data":"SomeMerchantData","lifetime":22,"currency":"GEL","server_callback_url":"https://waitforcallback.com","product_id":"SomeProductId","response_url":"http://callback","order_desc":"Nice :)","payment_systems":"SomePaymentSystems","reservation_data":"0xFF","lang":"uk","version":"2.0.0","merchant_id":"100500","order_id":"1234-45","required_rectoken":"Y","preauth":"Y","delayed":"Y","amount":"123","verification":"Y","default_payment_system":"SomeDefaultPaymentSystem"}}',
               headers: REQUEST_HEADERS))
           .called(1);
 
@@ -192,7 +192,7 @@ void main() {
       final receipt = await api.getOrder('SomeMaybeUniqueToken');
 
       verify(mockedHttpClient.post(
-              Uri.parse('https://api.fondy.eu/api/checkout/merchant/order'),
+              Uri.parse('https://pay.flitt.com/api/checkout/merchant/order'),
               body: '{"request":{"token":"SomeMaybeUniqueToken"}}',
               headers: REQUEST_HEADERS))
           .called(1);
@@ -201,7 +201,7 @@ void main() {
       expect(receipt.cardBin, 4444);
       expect(receipt.amount, 100500);
       expect(receipt.paymentId, 500100);
-      expect(receipt.currency, 'UAH');
+      expect(receipt.currency, 'GEL');
       expect(receipt.status, Status.approved);
       expect(receipt.transactionType, TransactionType.purchase);
       expect(receipt.senderCellPhone, '');
@@ -219,7 +219,7 @@ void main() {
       expect(receipt.eci, 1);
       expect(receipt.fee, 2);
       expect(receipt.actualAmount, 3);
-      expect(receipt.actualCurrency, 'UAH');
+      expect(receipt.actualCurrency, 'GEL');
       expect(receipt.paymentSystem, 'test');
       expect(receipt.verificationStatus, null);
       expect(receipt.signature, 'Sign');
@@ -245,7 +245,7 @@ void main() {
       final result =
           await api.checkout(creditCard, 'Token', null, 'http://callback.url');
       verify(mockedHttpClient.post(
-              Uri.parse('https://api.fondy.eu/api/checkout/ajax'),
+              Uri.parse('https://pay.flitt.com/api/checkout/ajax'),
               body:
                   '{"request":{"payment_system":"card","token":"Token","expiry_date":"1125","cvv2":"111","card_number":"4444555511116666"}}',
               headers: REQUEST_HEADERS))
@@ -261,7 +261,7 @@ void main() {
       final result = await api.checkout(
           creditCard, 'Token', 'example@test.com', 'http://callback.url');
       verify(mockedHttpClient.post(
-              Uri.parse('https://api.fondy.eu/api/checkout/ajax'),
+              Uri.parse('https://pay.flitt.com/api/checkout/ajax'),
               body:
                   '{"request":{"email":"example@test.com","payment_system":"card","token":"Token","expiry_date":"0125","cvv2":"111","card_number":"4444555511116666"}}',
               headers: REQUEST_HEADERS))
@@ -291,7 +291,7 @@ void main() {
       final result = await api.checkoutNativePay(
           'Token', null, 'SuperPaymentSystem', someNativeData);
       verify(mockedHttpClient.post(
-              Uri.parse('https://api.fondy.eu/api/checkout/ajax'),
+              Uri.parse('https://pay.flitt.com/api/checkout/ajax'),
               body:
                   '{"request":{"payment_system":"SuperPaymentSystem","data":{"someField":"whichRepresentsNativeData"},"token":"Token"}}',
               headers: REQUEST_HEADERS))
@@ -306,7 +306,7 @@ void main() {
       final result = await api.checkoutNativePay(
           'Token', 'example@test.com', 'SuperPaymentSystem', someNativeData);
       verify(mockedHttpClient.post(
-              Uri.parse('https://api.fondy.eu/api/checkout/ajax'),
+              Uri.parse('https://pay.flitt.com/api/checkout/ajax'),
               body:
                   '{"request":{"email":"example@test.com","payment_system":"SuperPaymentSystem","data":{"someField":"whichRepresentsNativeData"},"token":"Token"}}',
               headers: REQUEST_HEADERS))
@@ -376,7 +376,7 @@ const RESPONSE_GET_ORDER = '''
       "card_bin": 4444,
       "amount": "100500",
       "payment_id": 500100,
-      "currency": "UAH",
+      "currency": "GEL",
       "order_status": "approved",
       "tran_type": "purchase",
       "sender_cell_phone": "",
@@ -395,7 +395,7 @@ const RESPONSE_GET_ORDER = '''
       "eci": "1",
       "fee": "2",
       "actual_amount": "3",
-      "actual_currency": "UAH",
+      "actual_currency": "GEL",
       "payment_system": "test",
       "verification_status": null,
       "signature": "Sign"

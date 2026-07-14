@@ -18,10 +18,11 @@ import './utils.dart';
 @GenerateMocks([Api, Native, PlatformSpecific])
 void main() {
   group('constructor', () {
-    test('should throw exception with wrong merchantId', () {
-      expect(
-          () => Cloudipsp(-1, (CloudipspWebViewConfirmation confirmation) {}),
-          thrownArgumentErrorValue(-1, 'merchantId'));
+    test(
+        'should construct even with an invalid merchantId '
+        '(merchantId is validated later, at payment time)', () {
+      final c = Cloudipsp(-1, (CloudipspWebViewConfirmation confirmation) {});
+      expect(c.merchantId, -1);
     });
     test('should create new instance', () {
       final c = Cloudipsp(1, (CloudipspWebViewConfirmation confirmation) {});
@@ -38,22 +39,22 @@ void main() {
 
     final someToken = 'SomeToken';
     final cardSuccessNormal =
-        PrivateCreditCard('4444555511116666', 11, 25, '111');
+        PrivateCreditCard('4444555511116666', 11, 35, '111');
     final cardSuccess3DSCase1 =
-        PrivateCreditCard('4444555566661111', 11, 25, '111');
+        PrivateCreditCard('4444555566661111', 11, 35, '111');
     final cardSuccess3DSCase2 =
-        PrivateCreditCard('4444555566661111', 11, 25, '112');
+        PrivateCreditCard('4444555566661111', 11, 35, '112');
     // final cardFailureNormal =
-    // PrivateCreditCard('4444111155556666', 11, 25, '111');
-    // final cardFailure3DS = PrivateCreditCard('4444111166665555', 11, 25, '111');
-    final cardInvalid = PrivateCreditCard('4444555566661110', 11, 25, '111');
-    final order = Order(123, 'UAH', '1234-45', 'Nice :)', 'example@test.com');
+    // PrivateCreditCard('4444111155556666', 11, 35, '111');
+    // final cardFailure3DS = PrivateCreditCard('4444111166665555', 11, 35, '111');
+    final cardInvalid = PrivateCreditCard('4444555566661110', 11, 35, '111');
+    final order = Order(123, 'GEL', '1234-45', 'Nice :)', 'example@test.com');
     final receipt = Receipt(
         '4444*6666',
         4444,
         100500,
         500100,
-        'UAH',
+        'GEL',
         Status.approved,
         TransactionType.purchase,
         '',
@@ -72,7 +73,7 @@ void main() {
         1,
         2,
         3,
-        'UAH',
+        'GEL',
         'test',
         null,
         'Sign',
@@ -334,7 +335,7 @@ void main() {
     group('googlePay', () {
       test('should throw exception on non android platforms', () {
         when(mockedPlatformSpecific.isAndroid).thenReturn(false);
-        expect(() => cloudipsp.googlePay(order),
+        expect(() => cloudipsp.googlePay(order, googlePayConfig),
             thrownUnsupported('GooglePay available only for Android'));
       });
       test('should handle native exception', () async {
@@ -344,13 +345,14 @@ void main() {
                 code: 'googlePay_MOCK_CODE',
                 message: 'googlePay_MOCK_MESSAGE'));
         expect(
-            () => cloudipsp.googlePay(order),
+            () => cloudipsp.googlePay(order, googlePayConfig),
             thrownCloudipspUserError(
                 'googlePay_MOCK_CODE', 'googlePay_MOCK_MESSAGE'));
       });
       test('should successfully pay', () async {
         when(mockedPlatformSpecific.isAndroid).thenReturn(true);
-        final receivedReceipt = await cloudipsp.googlePay(order);
+        final receivedReceipt =
+            await cloudipsp.googlePay(order, googlePayConfig);
 
         verify(mockedNative.googlePay(googlePayConfig['data'])).called(1);
         verify(mockedApi.checkoutNativePay(someToken, order.email,
@@ -364,7 +366,7 @@ void main() {
     group('googlePayToken', () {
       test('should throw exception on non android platforms', () {
         when(mockedPlatformSpecific.isAndroid).thenReturn(false);
-        expect(() => cloudipsp.googlePayToken(someToken),
+        expect(() => cloudipsp.googlePayToken(someToken, googlePayConfig),
             thrownUnsupported('GooglePay available only for Android'));
       });
       test('should handle native exception', () async {
@@ -374,13 +376,14 @@ void main() {
                 code: 'googlePayToken_MOCK_CODE',
                 message: 'googlePayToken_MOCK_MESSAGE'));
         expect(
-            () => cloudipsp.googlePayToken(someToken),
+            () => cloudipsp.googlePayToken(someToken, googlePayConfig),
             thrownCloudipspUserError(
                 'googlePayToken_MOCK_CODE', 'googlePayToken_MOCK_MESSAGE'));
       });
       test('should successfully pay', () async {
         when(mockedPlatformSpecific.isAndroid).thenReturn(true);
-        final receivedReceipt = await cloudipsp.googlePayToken(someToken);
+        final receivedReceipt =
+            await cloudipsp.googlePayToken(someToken, googlePayConfig);
 
         verify(mockedNative.googlePay(googlePayConfig['data'])).called(1);
         verify(mockedApi.checkoutNativePay(someToken, null,

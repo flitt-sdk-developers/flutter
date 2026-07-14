@@ -15,6 +15,11 @@ enum ButtonType {
 
 enum ButtonThemes { light, dark }
 
+/// Standard Google Pay button height in logical pixels (dp). Also used as the
+/// minimum so the button always meets Google's brand guidelines and never
+/// renders as a thin strip.
+const double _kGooglePayButtonHeight = 48.0;
+
 class GooglePayButton extends StatefulWidget {
   final int merchantId;
   final Order? order;
@@ -102,29 +107,48 @@ class _GooglePayButtonState extends State<GooglePayButton> {
 
   @override
   Widget build(BuildContext context) {
-    return supportsGPay && config != null
-        ? AndroidView(
-            key: _viewKey,
-            viewType: 'google_pay_button_view',
-            creationParams: <String, dynamic>{
-              'allowedPaymentMethods': config?['data']
-                  ?['allowedPaymentMethods'],
-              'theme': widget.theme.toString().split('.').last,
-              'type': widget.type.toString().split('.').last,
-              'borderRadius': widget.borderRadius,
-              'width': widget.width,
-              'height': widget.height,
-            },
-            creationParamsCodec: const StandardMessageCodec(),
-            onPlatformViewCreated: (int id) {
-              _channel.setMethodCallHandler((call) async {
-                if (call.method == 'onPress') {
-                  _onPress();
-                }
-              });
-            },
-          )
-        : Container();
+    if (!(supportsGPay && config != null)) {
+      return Container();
+    }
+    // The native PayButton has a fixed height, but an AndroidView fills the
+    // constraints it is given and would take infinite height inside a Column /
+    // ScrollView. Bound it here (respecting an explicit height, else the
+    // standard Google Pay button height).
+    //
+    // Google's brand guidelines require the button to keep its proportions and
+    // be at least as prominent as other buttons, so clamp to a 48dp minimum
+    // (the standard Google Pay button height) even if a smaller height is
+    // requested — otherwise the button renders as a narrow strip.
+    // https://developers.google.com/pay/api/web/guides/brand-guidelines
+    final double effectiveHeight =
+        (widget.height ?? _kGooglePayButtonHeight).clamp(
+      _kGooglePayButtonHeight,
+      double.infinity,
+    );
+    return SizedBox(
+      width: widget.width,
+      height: effectiveHeight,
+      child: AndroidView(
+        key: _viewKey,
+        viewType: 'google_pay_button_view',
+        creationParams: <String, dynamic>{
+          'allowedPaymentMethods': config?['data']?['allowedPaymentMethods'],
+          'theme': widget.theme.toString().split('.').last,
+          'type': widget.type.toString().split('.').last,
+          'borderRadius': widget.borderRadius,
+          'width': widget.width,
+          'height': effectiveHeight,
+        },
+        creationParamsCodec: const StandardMessageCodec(),
+        onPlatformViewCreated: (int id) {
+          _channel.setMethodCallHandler((call) async {
+            if (call.method == 'onPress') {
+              _onPress();
+            }
+          });
+        },
+      ),
+    );
   }
 
   @override

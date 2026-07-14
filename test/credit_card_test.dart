@@ -47,7 +47,7 @@ void main() {
   });
 
   test('should pass validation exp yy', () {
-    final c = PrivateCreditCard('', 0, 25, '');
+    final c = PrivateCreditCard('', 0, 35, '');
 
     expect(c.isValidExpireYear(), true);
   });
@@ -59,7 +59,7 @@ void main() {
   });
 
   test('should pass validation exp date', () {
-    final c = PrivateCreditCard('', 11, 25, '');
+    final c = PrivateCreditCard('', 11, 35, '');
 
     expect(c.isValidExpireDate(), true);
   });
@@ -88,7 +88,7 @@ void main() {
   });
 
   test('should pass validation for good card', () {
-    final c = PrivateCreditCard('4444555566661111', 11, 25, '123');
+    final c = PrivateCreditCard('4444555566661111', 11, 35, '123');
     expect(c.isValid(), true);
   });
 }

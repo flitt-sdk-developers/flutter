@@ -64,7 +64,7 @@ public class GooglePayButtonPlugin implements FlutterPlugin, ActivityAware {
     public static class GooglePayButtonFactory extends PlatformViewFactory {
         private final MethodChannel channel;
 
-        GooglePayButtonFactory(BinaryMessenger messenger) {
+        public GooglePayButtonFactory(BinaryMessenger messenger) {
             super(StandardMessageCodec.INSTANCE);
             channel = new MethodChannel(messenger, "google_pay_button");
         }
@@ -117,13 +117,26 @@ public class GooglePayButtonPlugin implements FlutterPlugin, ActivityAware {
                 }
             });
 
-            int width = params.get("width") != null ? ((Double) params.get("width")).intValue() : LayoutParams.WRAP_CONTENT;
-            int height = params.get("height") != null ? ((Double) params.get("height")).intValue() : LayoutParams.WRAP_CONTENT;
+            // Sizes arrive from Dart in logical pixels (dp), but Android
+            // LayoutParams expect physical pixels. Passing the raw value made
+            // e.g. height 48 become 48px (~16dp on a 3x screen), so the button
+            // rendered as a thin strip. Convert dp -> px using the display
+            // density. Default to filling the host view: the Flutter side
+            // already reserves the correct (brand-guide) height via a SizedBox.
+            final float density = context.getResources().getDisplayMetrics().density;
+            final Double widthDp = (Double) params.get("width");
+            final Double heightDp = (Double) params.get("height");
+            int width = widthDp != null ? Math.round(widthDp.floatValue() * density) : LayoutParams.MATCH_PARENT;
+            int height = heightDp != null ? Math.round(heightDp.floatValue() * density) : LayoutParams.MATCH_PARENT;
             LinearLayout.LayoutParams buttonLayoutParams = new LinearLayout.LayoutParams(width, height);
             googlePayButton.setLayoutParams(buttonLayoutParams);
 
+            // Fill the platform-view host and center the button, so it occupies
+            // the full height reserved on the Flutter side per Google's brand
+            // guide instead of being pinned, undersized, to the top-left.
+            layout.setGravity(android.view.Gravity.CENTER);
             layout.addView(googlePayButton);
-            layout.setLayoutParams(new LinearLayout.LayoutParams(width, height));
+            layout.setLayoutParams(new LinearLayout.LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT));
         }
 
         private int getButtonType(String type) {

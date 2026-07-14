@@ -4,8 +4,7 @@
 <dict>
 	<key>com.apple.developer.in-app-payments</key>
 	<array>
-		<string>merchant.1396424</string>
-		<string>merchant.fondy.eu</string>
+		<string>merchant.flitt</string>
 	</array>
 </dict>
 </plist>

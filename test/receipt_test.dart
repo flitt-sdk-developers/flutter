@@ -11,7 +11,7 @@ void main() {
         'card_bin': 4444,
         'amount': '100500',
         'payment_id': 500100,
-        'currency': 'UAH',
+        'currency': 'GEL',
         'order_status': 'approved',
         'tran_type': 'purchase',
         'sender_cell_phone': '',
@@ -30,7 +30,7 @@ void main() {
         'eci': '1',
         'fee': '2',
         'actual_amount': '3',
-        'actual_currency': 'UAH',
+        'actual_currency': 'GEL',
         'payment_system': 'test',
         'verification_status': null,
         'signature': 'Sign'
@@ -43,7 +43,7 @@ void main() {
       expect(receipt.cardBin, 4444);
       expect(receipt.amount, 100500);
       expect(receipt.paymentId, 500100);
-      expect(receipt.currency, 'UAH');
+      expect(receipt.currency, 'GEL');
       expect(receipt.status, Status.approved);
       expect(receipt.transactionType, TransactionType.purchase);
       expect(receipt.senderCellPhone, '');
@@ -61,7 +61,7 @@ void main() {
       expect(receipt.eci, 1);
       expect(receipt.fee, 2);
       expect(receipt.actualAmount, 3);
-      expect(receipt.actualCurrency, 'UAH');
+      expect(receipt.actualCurrency, 'GEL');
       expect(receipt.paymentSystem, 'test');
       expect(receipt.verificationStatus, null);
       expect(receipt.signature, 'Sign');
